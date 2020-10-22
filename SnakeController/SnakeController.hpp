@@ -51,3 +51,4 @@ private:
 };
 
 } // namespace Snake
+// some small change for sake of first merge request
