@@ -157,7 +157,8 @@ void Controller::addHeadSegment(Segment const& newHead)
 
 void Controller::removeTailSegmentIfNotScored(Segment const& newHead)
 {
-    if (std::make_pair(newHead.x, newHead.y) == m_foodPosition) {
+    auto newHeadPosition = std::make_pair(newHead.x, newHead.y);
+    if (newHeadPosition == m_foodPosition) {
         m_scorePort.send(std::make_unique<EventT<ScoreInd>>());
         m_foodPort.send(std::make_unique<EventT<FoodReq>>());
     } else {
@@ -167,7 +168,8 @@ void Controller::removeTailSegmentIfNotScored(Segment const& newHead)
 
 void Controller::updateSegmentsIfSuccessfullMove(Segment const& newHead)
 {
-    if (isSegmentAtPosition(std::make_pair(newHead.x, newHead.y)) or isPositionOutsideMap(std::make_pair(newHead.x, newHead.y))) {
+    auto newHeadPosition = std::make_pair(newHead.x, newHead.y);
+    if (isSegmentAtPosition(newHeadPosition) or isPositionOutsideMap(newHeadPosition)) {
         m_scorePort.send(std::make_unique<EventT<LooseInd>>());
     } else {
         addHeadSegment(newHead);
