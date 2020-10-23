@@ -237,19 +237,22 @@ void Controller::receive(std::unique_ptr<Event> e)
     {
         handleTimePassed(Snake::TimeoutInd());
     }
+    else
     if(e->getMessageId() == 0x10)
     {
         handleDirectionChange(Snake::DirectionInd());
     }
+    else
     if(e->getMessageId() == 0x40)
     {
         handleFoodPositionChange(Snake::FoodInd());
     }
+    else
     if(e->getMessageId() == 0x42)
     {
         handleNewFood(Snake::FoodResp());
     }
-    
+    else throw UnexpectedEventException();
 }
 
 } // namespace Snake
