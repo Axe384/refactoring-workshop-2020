@@ -62,24 +62,24 @@ Controller::Controller(IPort& p_displayPort, IPort& p_foodPort, IPort& p_scorePo
     }
 }
 
-bool Controller::isSegmentAtPosition(int x, int y) const
+bool Controller::isSegmentAtPosition(std::pair<int, int> position) const
 {
     return m_segments.end() !=  std::find_if(m_segments.cbegin(), m_segments.cend(),
-        [x, y](auto const& segment){ return segment.x == x and segment.y == y; });
+        [position](auto const& segment){ return segment.x == position.first && segment.y == position.second; });
 }
 
-bool Controller::isPositionOutsideMap(int x, int y) const
+bool Controller::isPositionOutsideMap(std::pair<int, int> position) const
 {
-    return x < 0 or y < 0 or x >= m_mapDimension.first or y >= m_mapDimension.second;
+    return position.first < 0 or position.second < 0 or position.first >= m_mapDimension.first or position.second >= m_mapDimension.second;
 }
 
-void Controller::sendPlaceNewFood(int x, int y)
+void Controller::sendPlaceNewFood(std::pair<int, int> position)
 {
-    m_foodPosition = std::make_pair(x, y);
+    m_foodPosition = position;
 
     DisplayInd placeNewFood;
-    placeNewFood.x = x;
-    placeNewFood.y = y;
+    placeNewFood.x = position.first;
+    placeNewFood.y = position.second;
     placeNewFood.value = Cell_FOOD;
 
     m_displayPort.send(std::make_unique<EventT<DisplayInd>>(placeNewFood));
@@ -167,7 +167,7 @@ void Controller::removeTailSegmentIfNotScored(Segment const& newHead)
 
 void Controller::updateSegmentsIfSuccessfullMove(Segment const& newHead)
 {
-    if (isSegmentAtPosition(newHead.x, newHead.y) or isPositionOutsideMap(newHead.x, newHead.y)) {
+    if (isSegmentAtPosition(std::make_pair(newHead.x, newHead.y)) or isPositionOutsideMap(std::make_pair(newHead.x, newHead.y))) {
         m_scorePort.send(std::make_unique<EventT<LooseInd>>());
     } else {
         addHeadSegment(newHead);
@@ -189,29 +189,31 @@ void Controller::handleDirectionInd(std::unique_ptr<Event> e)
     }
 }
 
-void Controller::updateFoodPosition(int x, int y, std::function<void()> clearPolicy)
+void Controller::updateFoodPosition(std::pair<int, int> position, std::function<void()> clearPolicy)
 {
-    if (isSegmentAtPosition(x, y) || isPositionOutsideMap(x,y)) {
+    if (isSegmentAtPosition(position) || isPositionOutsideMap(position)) {
         m_foodPort.send(std::make_unique<EventT<FoodReq>>());
         return;
     }
 
     clearPolicy();
-    sendPlaceNewFood(x, y);
+    sendPlaceNewFood(position);
 }
 
 void Controller::handleFoodInd(std::unique_ptr<Event> e)
 {
     auto receivedFood = payload<FoodInd>(*e);
+    auto foodPosition = std::make_pair(receivedFood.x, receivedFood.y);
 
-    updateFoodPosition(receivedFood.x, receivedFood.y, std::bind(&Controller::sendClearOldFood, this));
+    updateFoodPosition(foodPosition, std::bind(&Controller::sendClearOldFood, this));
 }
 
 void Controller::handleFoodResp(std::unique_ptr<Event> e)
 {
     auto requestedFood = payload<FoodResp>(*e);
+    auto foodPosition = std::make_pair(requestedFood.x, requestedFood.y);
 
-    updateFoodPosition(requestedFood.x, requestedFood.y, []{});
+    updateFoodPosition(foodPosition, []{});
 }
 
 void Controller::handlePauseInd(std::unique_ptr<Event> e)
